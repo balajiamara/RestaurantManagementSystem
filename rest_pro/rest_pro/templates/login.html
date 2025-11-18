@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+
+<!-- <h1>Login</h1>
+
+<form id="login-form">
+    <input name="Userid" placeholder="User ID" required>
+    <input name="Password" placeholder="Password" type="password" required>
+    <button type="submit">Login</button>
+</form>
+
+<p>No account? <a href="/register/">Register Here</a></p>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+
+document.getElementById("login-form").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const fd = new FormData(this);
+
+    fetch(`${API}/login_user/`, {
+        method: "POST",
+        body: fd,
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.msg === "Login success") {
+            window.location.href = "/home/";   // redirect manually
+        } else {
+            alert(data.error || data.msg);
+        }
+
+    });
+}); -->
+<h1>Login</h1>
+
+<form id="login-form" action="/login_user/" method="POST">
+    <input name="Userid" placeholder="User ID" required>
+    <input name="Password" placeholder="Password" type="password" required>
+    <button type="submit">Login</button>
+</form>
+
+<p>No account? <a href="/register/">Register Here</a></p>
+
+</script>
+
+</body>
+</html>

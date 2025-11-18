@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background: #333;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+        }
+        .container {
+            margin: 50px auto;
+            width: 60%;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 10px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2>Welcome to Restaurant App</h2>
+    </div>
+
+    <div class="container">
+        <h2>Hello, {{ username }} 👋</h2>
+        <p>Select an option below:</p>
+
+        <!-- Everyone can see menu -->
+        <a href="/menu/" class="btn">View Menu</a>
+
+        <!-- Only ADMIN can see these buttons -->
+        {% if role|lower == 'admin' %}
+            <!-- <a href="/add_item/" class="btn">Add New Dish</a> -->
+            <a href="/show_userss/" class="btn">View Users</a>
+        {% else %}
+            <!-- Normal user can update own details -->
+            <a href="/my_details/" class="btn">Update My Details</a>
+        {% endif %}
+
+
+        <a href="/login/" class="btn" style="background:#dc3545;">Logout</a>
+    </div>
+
+</body>
+</html>

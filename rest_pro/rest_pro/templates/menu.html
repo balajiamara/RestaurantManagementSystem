@@ -1,0 +1,377 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Menu</title>
+  <style>
+    body { font-family: Arial; background: #f7f7f7; padding: 20px; }
+    .container { max-width:1100px; margin:0 auto; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:18px; margin-top:18px; }
+    .card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.06); text-align:center; }
+    .card img { width:100%; height:180px; object-fit:cover; display:block; }
+    .card-body { padding:12px; }
+    .meta { color:#555; font-size:14px; margin:8px 0; }
+    .price { font-weight:700; margin-top:6px; }
+    .btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; color:#fff; }
+    .btn-primary{ background:#007bff; }
+    .btn-warning{ background:#f0ad4e; }
+    .btn-danger{ background:#dc3545; }
+    .btn-small{ padding:6px 8px; font-size:13px; margin-left:6px; }
+
+    /* modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; z-index:50; }
+    .modal { background:#fff; padding:18px; border-radius:8px; width:560px; max-width:96%; box-shadow:0 8px 30px rgba(0,0,0,.25); }
+    .form-row{ display:flex; gap:10px; margin-bottom:8px; }
+    .form-row input[type="text"], .form-row input[type="number"], textarea{ width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; }
+    label{ font-size:13px; color:#333; display:block; margin-bottom:6px; }
+
+    /* error box */
+    .error-box { background:#ffe6e6; border:1px solid #ffb3b3; color:#900; padding:8px 12px; border-radius:6px; margin-top:8px; }
+    .field-error { color:#900; font-size:13px; margin-top:6px; }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Restaurant Menu</h2>
+      {% if role|default:''|lower == 'admin' %}
+        <div>
+          <button class="btn btn-primary" onclick="openAddModal()">Add Item</button>
+        </div>
+      {% endif %}
+      </div>
+
+    <div id="grid" class="grid">
+      {% for item in menu %}
+      <div class="card" data-id="{{ item.DishId }}">
+        <img src="{{ item.Image }}" alt="{{ item.DishName }}">
+        <div class="card-body">
+          <h3 style="margin:6px 0">{{ item.DishName }}</h3>
+          <div class="meta"><strong>Category:</strong> {{ item.Category }}</div>
+          <div class="meta"><strong>Ingredients:</strong> {{ item.Ingredients }}</div>
+          <div class="price">₹{{ item.Price }}</div>
+
+          {% if role|default:''|lower == 'admin' %}
+            <div style="margin-top:10px;">
+              <button class="btn btn-warning btn-small" onclick="openEditModal({{ item.DishId }})">Update</button>
+              <button class="btn btn-danger btn-small" onclick="deleteItem({{ item.DishId }})">Delete</button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ADD Modal -->
+  <div id="addBackdrop" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Add New Dish</h3>
+
+      <form id="addForm" onsubmit="event.preventDefault(); addDish();">
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Dish ID (manual)</label>
+            <input name="DishId" id="addDishId" placeholder="e.g. 101" required>
+            <div id="err_add_DishId" class="field-error"></div>
+          </div>
+
+          <div style="flex:1">
+            <label>Dish name</label>
+            <input name="DishName" id="addDishName" placeholder="Dish name" required>
+            <div id="err_add_DishName" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Price</label>
+            <input name="Price" id="addPrice" type="number" step="0.01" placeholder="Price" required>
+            <div id="err_add_Price" class="field-error"></div>
+          </div>
+          <div style="flex:1">
+            <label>Category</label>
+            <input name="Category" id="addCategory" placeholder="Category">
+            <div id="err_add_Category" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Ingredients</label>
+            <input name="Ingredients" id="addIngredients" placeholder="Ingredients">
+            <div id="err_add_Ingredients" class="field-error"></div>
+          </div>
+          <div style="width:220px">
+            <label>Image (optional)</label>
+            <input name="Image" id="addImage" type="file" accept="image/*">
+            <div id="err_add_Image" class="field-error"></div>
+          </div>
+        </div>
+
+        <div id="addErrors"></div>
+
+        <div style="text-align:right">
+          <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Dish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="modalTitle">Edit Dish</h3>
+      <form id="editForm" onsubmit="event.preventDefault(); updateDish();">
+        <div style="margin-bottom:8px">
+          <label>Dish ID</label>
+          <input name="DishId" id="editDishId" required>
+          <div id="err_edit_DishId" class="field-error"></div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Dish Name</label>
+            <input type="text" name="DishName" id="editDishName" required>
+            <div id="err_edit_DishName" class="field-error"></div>
+          </div>
+          <div style="width:130px">
+            <label>Price</label>
+            <input type="number" step="0.01" name="Price" id="editPrice" required>
+            <div id="err_edit_Price" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Ingredients</label>
+            <input type="text" name="Ingredients" id="editIngredients">
+            <div id="err_edit_Ingredients" class="field-error"></div>
+          </div>
+          <div style="width:180px">
+            <label>Category</label>
+            <input type="text" name="Category" id="editCategory">
+            <div id="err_edit_Category" class="field-error"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <label>Replace Image (optional)</label>
+          <input type="file" id="editImage" name="Image" accept="image/*">
+          <div id="err_edit_Image" class="field-error"></div>
+        </div>
+
+        <div id="editErrors"></div>
+
+        <div style="text-align:right;margin-top:8px;">
+          <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+/* utility to get cookie (csrf if used) */
+function getCookie(name) {
+  const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+  return v ? decodeURIComponent(v.split('=')[1]) : null;
+}
+const csrftoken = getCookie('csrftoken');
+
+/* helpers to show errors */
+function clearFieldErrors(prefix) {
+  const fields = ['DishId','DishName','Price','Category','Ingredients','Image'];
+  fields.forEach(f => {
+    const el = document.getElementById(`${prefix}_${f}`);
+    if (el) el.textContent = '';
+  });
+  document.getElementById(prefix === 'err_add' ? 'addErrors' : 'editErrors').innerHTML = '';
+}
+
+function showFieldErrors(prefix, errors) {
+  // prefix = 'err_add' or 'err_edit'
+  clearFieldErrors(prefix);
+  if (!errors) return;
+  // errors like {"DishId":["This field is required."]}
+  for (const [field, msgs] of Object.entries(errors)) {
+    const id = `${prefix}_${field}`;
+    const container = document.getElementById(id);
+    if (container) {
+      container.textContent = msgs.join(' ');
+    } else {
+      // non-field errors: show in the error box area
+      const box = document.createElement('div');
+      box.className = 'error-box';
+      box.textContent = msgs.join(' ');
+      const parent = document.getElementById(prefix === 'err_add' ? 'addErrors' : 'editErrors');
+      parent.appendChild(box);
+    }
+  }
+}
+
+/* Add modal open/close */
+function openAddModal(){
+  document.getElementById('addBackdrop').style.display = 'flex';
+  clearFieldErrors('err_add');
+  document.getElementById('addForm').reset();
+}
+function closeAddModal(){
+  document.getElementById('addBackdrop').style.display = 'none';
+  document.getElementById('addForm').reset();
+  clearFieldErrors('err_add');
+}
+
+/* Edit modal functions */
+function openEditModal(id){
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (!card) return alert('Card not found');
+  document.getElementById('editDishId').value = id;
+  document.getElementById('editDishName').value = card.querySelector('h3').textContent.trim();
+  const metas = card.querySelectorAll('.meta');
+  let cat = '', ing = '';
+  metas.forEach(m => {
+    if (m.textContent.includes('Category:')) cat = m.textContent.replace('Category:','').trim();
+    if (m.textContent.includes('Ingredients:')) ing = m.textContent.replace('Ingredients:','').trim();
+  });
+  document.getElementById('editCategory').value = cat;
+  document.getElementById('editIngredients').value = ing;
+  const priceText = card.querySelector('.price') ? card.querySelector('.price').textContent.replace(/[^0-9.]/g,'') : '';
+  document.getElementById('editPrice').value = priceText;
+  clearFieldErrors('err_edit');
+  document.getElementById('modalBackdrop').style.display = 'flex';
+}
+function closeAddModal(){
+  const backdrop = document.getElementById('addBackdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  const form = document.getElementById('addForm');
+  if (form) form.reset();
+  clearFieldErrors('err_add');
+}
+
+
+/* ADD Dish */
+async function addDish(){
+  const form = document.getElementById('addForm');
+  if (!form) return alert('Add form not found');
+
+  const fd = new FormData(form);
+
+  // ensure DishId being sent as number if desired
+  const idVal = fd.get('DishId');
+  if (idVal && !Number.isNaN(Number(idVal))) {
+    fd.set('DishId', Number(idVal));
+  }
+
+  // remove Image key if no file selected
+  const img = document.getElementById('addImage');
+  if (img && img.files.length === 0) fd.delete('Image');
+
+  clearFieldErrors('err_add');
+
+  try {
+    const res = await fetch('/add_item/', {
+      method: 'POST',
+      body: fd,
+      credentials: 'include',
+      headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
+    });
+
+    // Try to parse JSON safely
+    let data;
+    try {
+      data = await res.json();
+    } catch (parseErr) {
+      data = { non_field_errors: ['Invalid server response'] };
+    }
+
+    if (res.ok) {
+      // close modal immediately and show a small visual feedback
+      closeAddModal();
+
+      // optional small in-place success notification (temporary)
+      const tmp = document.createElement('div');
+      tmp.textContent = 'Dish added ✓';
+      tmp.style.position = 'fixed';
+      tmp.style.top = '16px';
+      tmp.style.right = '16px';
+      tmp.style.background = '#d4edda';
+      tmp.style.padding = '10px 14px';
+      tmp.style.borderRadius = '6px';
+      tmp.style.boxShadow = '0 2px 8px rgba(0,0,0,.1)';
+      document.body.appendChild(tmp);
+
+      // reload after a short delay so user sees modal close + message
+      setTimeout(()=> {
+        document.body.removeChild(tmp);
+        location.reload();
+      }, 700);
+
+    } else {
+      // show validation errors (field-specific or global)
+      showFieldErrors('err_add', data);
+      // keep modal open so admin can fix fields
+    }
+  } catch (err) {
+    // network error or runtime error: show general error in addErrors
+    showFieldErrors('err_add', {non_field_errors:['Network or server error']});
+    console.error('addDish error:', err);
+  }
+}
+
+
+/* DELETE Dish */
+async function deleteItem(id){
+  if (!confirm('Delete this item?')) return;
+  try {
+    const res = await fetch(`/remove_item/${id}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
+    });
+    const data = await res.json();
+    if (res.ok){
+      location.reload();
+    } else {
+      alert(data.error || JSON.stringify(data));
+    }
+  } catch (err) {
+    alert('Request failed');
+    console.error(err);
+  }
+}
+
+/* UPDATE Dish */
+async function updateDish(){
+  const form = document.getElementById('editForm');
+  const id = document.getElementById('editDishId').value;
+  const fd = new FormData(form);
+  const fileInput = document.getElementById('editImage');
+  if (fileInput && fileInput.files.length === 0) fd.delete('Image');
+
+  clearFieldErrors('err_edit');
+
+  try {
+    const res = await fetch(`/modify_item/${id}/`, {
+      method: 'PATCH',
+      body: fd,
+      credentials: 'include',
+      headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
+    });
+    const data = await res.json();
+    if (res.ok){
+      closeModal();
+      location.reload();
+    } else {
+      showFieldErrors('err_edit', data);
+    }
+  } catch (err) {
+    showFieldErrors('err_edit', {non_field_errors:['Network or server error']});
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>

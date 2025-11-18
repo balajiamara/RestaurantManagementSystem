@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update User</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 40px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 12px #ccc;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border: 1px solid #999;
+        }
+        .btn {
+            padding: 10px 14px;
+            background: #007bff;
+            color: white;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+
+    <script>
+        function updateUser(event) {
+            event.preventDefault();
+
+            let form = document.getElementById("updateForm");
+            let formData = new FormData(form);
+
+            fetch(`/modify_user/{{ user.Userid }}/`, {
+                method: "PUT",
+                body: formData,
+                credentials: "include"
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg || data.error);
+                if (data.msg) {
+                    window.location.href = "/show_userss/";
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Update User</h2>
+
+        <form id="updateForm" onsubmit="updateUser(event)">
+            <label>User ID (Read Only)</label>
+            <input type="text" value="{{ user.Userid }}" readonly>
+
+            <label>Name</label>
+            <input type="text" name="Username" value="{{ user.Username }}">
+
+            <label>Email</label>
+            <input type="email" name="Email" value="{{ user.Email }}">
+
+            <label>New Password (Optional)</label>
+            <input type="password" name="Password" placeholder="Enter new password">
+
+            <button type="submit" class="btn">Update</button>
+        </form>
+    </div>
+
+</body>
+</html>

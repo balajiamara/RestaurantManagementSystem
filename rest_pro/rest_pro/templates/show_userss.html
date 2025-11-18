@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Users</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 30px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 90%;
+            margin: auto;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        th {
+            background: #333;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .promote-btn { background: #28a745; }
+        .delete-btn { background: #dc3545; }
+        .update-btn { background: #0d6efd; }
+    </style>
+
+    <script>
+        // Promote a user (ADMIN ONLY)
+        function promoteUser(userid) {
+            fetch(`/promote_user/${userid}/`, {
+                method: "POST",
+                credentials: "include"
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg || data.error);
+                location.reload();
+            });
+        }
+
+        // Delete user (ADMIN ONLY)
+        function deleteUser(userid) {
+            if (!confirm("Are you sure you want to delete this user?")) return;
+
+            fetch(`/remove_user/${userid}/`, {
+                method: "DELETE",
+                credentials: "include"
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg || data.error);
+                location.reload();
+            });
+        }
+
+        // Update user — redirects to update page
+        function updateUser(userid) {
+            window.location.href = `/update_user_page/${userid}/`;
+        }
+    </script>
+</head>
+
+<body>
+
+    <h2>All Users</h2>
+
+    <table border="1">
+        <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for u in users %}
+        <tr>
+            <td>{{ u.Userid }}</td>
+            <td>{{ u.Username }}</td>
+            <td>{{ u.Email }}</td>
+            <td>{{ u.Role }}</td>
+
+            <td>
+
+                <!-- EVERYONE CAN UPDATE THEIR OWN DETAILS -->
+                {% if logged_in_userid == u.Userid or role|lower == 'admin' %}
+                    <button class="btn update-btn" onclick="updateUser('{{ u.Userid }}')">Update</button>
+                {% endif %}
+
+                <!-- ONLY ADMIN CAN PROMOTE -->
+                {% if role|lower == 'admin' and u.Role == "User" %}
+                    <button class="btn promote-btn" onclick="promoteUser('{{ u.Userid }}')">Promote</button>
+                {% endif %}
+
+                <!-- ONLY ADMIN CAN DELETE -->
+                {% if role|lower == 'admin' %}
+                    <button class="btn delete-btn" onclick="deleteUser('{{ u.Userid }}')">Delete</button>
+                {% endif %}
+
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+</body>
+</html>
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Users</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 30px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 90%;
+            margin: auto;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 0 10px #ccc;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        th {
+            background: #333;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .promote-btn {
+            background: #28a745;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+        }
+    </style>
+
+    <script>
+        // Promote user via POST
+        function promoteUser(userid) {
+            fetch(`/promote_user/${userid}/`, {
+                method: "POST",
+                credentials: "include"   // VERY IMPORTANT (sends cookie)
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg || data.error);
+                location.reload();
+            });
+        }
+
+        // Delete user via DELETE
+        function deleteUser(userid) {
+            if (!confirm("Are you sure you want to delete this user?")) return;
+
+            fetch(`/remove_user/${userid}/`, {
+                method: "DELETE",
+                credentials: "include"
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.msg || data.error);
+                location.reload();
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <h2>All Users</h2>
+
+    <table border="1">
+        <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for u in users %}
+        <tr>
+            <td>{{ u.Userid }}</td>
+            <td>{{ u.Username }}</td>
+            <td>{{ u.Email }}</td>
+            <td>{{ u.Role }}</td>
+
+            <td>
+                {% if u.Role == "User" %}
+                    <button class="btn promote-btn" onclick="promoteUser('{{ u.Userid }}')">Promote</button>
+                {% endif %}
+
+                <button class="btn delete-btn" onclick="deleteUser('{{ u.Userid }}')">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+</body>
+</html> -->
+
+
+<!-- <!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Show Users - Minimal</title>
+  <style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:90%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#333;color:#fff}</style>
+</head>
+<body>
+  <h1>Users (Minimal Template)</h1>
+  {% if users %}
+    <p>Total users: {{ users|length }}</p>
+    <table>
+      <thead><tr><th>Userid</th><th>Username</th><th>Email</th><th>Role</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td>{{ u.Userid }}</td>
+            <td>{{ u.Username }}</td>
+            <td>{{ u.Email }}</td>
+            <td>{{ u.Role }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No users found.</p>
+  {% endif %}
+</body>
+</html> -->

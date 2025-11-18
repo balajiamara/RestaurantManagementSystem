@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant App</title>
+</head>
+<body>
+
+<h1>Menu</h1>
+<div id="menu-list"></div>
+<div id="dish-detail"></div>
+
+<h2 class="admin-only">Add Dish</h2>
+<form id="dish-form" class="admin-only" enctype="multipart/form-data">
+    <input name="DishId" placeholder="Dish ID" required>
+    <input name="DishName" placeholder="Dish Name" required>
+    <input name="Ingredients" placeholder="Ingredients" required>
+    <input name="Price" placeholder="Price" type="number" required>
+    <input name="Category" placeholder="Category">
+    <input name="Image" type="file" accept="image/*" required>
+    <button type="submit">Add Dish</button>
+</form>
+
+<hr>
+
+<h1>Users</h1>
+<div id="users-list"></div>
+<div id="user-detail"></div>
+
+<h2 class="admin-only">Register User</h2>
+<form id="user-form" class="admin-only">
+    <input name="Userid" placeholder="User ID" required>
+    <input name="Username" placeholder="Username" required>
+    <input name="Email" placeholder="Email" required>
+    <input name="Password" placeholder="Password" type="password" required>
+    <button type="submit">Register</button>
+</form>
+
+<script>
+
+// =========================================
+// CONFIG
+// =========================================
+const API = "http://127.0.0.1:8000";
+
+
+// =========================================
+// CHECK USER ROLE & HIDE ADMIN BUTTONS
+// =========================================
+
+fetch(`${API}/whoami/`, { credentials: "include" })
+    .then(res => res.json())
+    .then(data => {
+        if (data.role !== "admin") {
+            // Hide everything that has admin-only class
+            document.querySelectorAll(".admin-only").forEach(el => {
+                el.style.display = "none";
+            });
+        }
+    })
+    .catch(() => {
+        // If token invalid → redirect to login
+        window.location.href = "/login/";
+    });
+
+
+// =========================================
+// MENU FUNCTIONS
+// =========================================
+
+function renderMenu() {
+    fetch(`${API}/show_item/`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            const div = document.getElementById("menu-list");
+            div.innerHTML = "";
+
+            data.Menu_Card?.forEach(d => {
+                const item = document.createElement("div");
+                item.innerHTML = `
+                    <strong>${d.DishName}</strong> - ₹${d.Price}<br>
+                    <button onclick="getDishDetail('${d.DishId}')">Details</button>
+
+                    <button class="admin-only" onclick="deleteDish('${d.DishId}')">
+                        Delete
+                    </button>
+                    <hr>
+                `;
+                div.appendChild(item);
+            });
+        });
+}
+
+function getDishDetail(id) {
+    fetch(`${API}/show_item/`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            const dish = data.Menu_Card.find(d => d.DishId === id);
+            const div = document.getElementById("dish-detail");
+
+            if (dish) {
+                div.innerHTML = `
+                    <h3>${dish.DishName}</h3>
+                    Ingredients: ${dish.Ingredients}<br>
+                    Price: ₹${dish.Price}<br>
+                    Category: ${dish.Category || ''}<br>
+                    <img src="${dish.Image}" width="150">
+                `;
+            }
+        });
+}
+
+function deleteDish(id) {
+    fetch(`${API}/remove_item/${id}/`, {
+        method: "DELETE",
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.msg || data.error);
+        renderMenu();
+    });
+}
+
+document.getElementById("dish-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const fd = new FormData(this);
+
+    fetch(`${API}/add_item/`, {
+        method: "POST",
+        body: fd,
+        credentials: "include"
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.Message || data.error);
+        this.reset();
+        renderMenu();
+    });
+});
+
+
+// =========================================
+// USER FUNCTIONS
+// =========================================
+
+function renderUsers() {
+    fetch(`${API}/show_users/`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            const div = document.getElementById("users-list");
+            div.innerHTML = "";
+
+            data.All_Users?.forEach(u => {
+                const item = document.createElement("div");
+                item.innerHTML = `
+                    <strong>${u.Username}</strong> (${u.Email}) — <b>${u.role}</b><br>
+
+                    <button onclick="getUserDetail('${u.Userid}')">Details</button>
+
+                    <button class="admin-only" onclick="promoteUser('${u.Userid}')">
+                        Make Admin
+                    </button>
+
+                    <button class="admin-only" onclick="deleteUser('${u.Userid}')">
+                        Delete
+                    </button>
+                    <hr>
+                `;
+                div.appendChild(item);
+            });
+        });
+}
+
+function getUserDetail(id) {
+    fetch(`${API}/show_users/`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            const user = data.All_Users.find(u => u.Userid === id);
+            const div = document.getElementById("user-detail");
+
+            if (user) {
+                div.innerHTML = `
+                    <h3>${user.Username}</h3>
+                    UserID: ${user.Userid}<br>
+                    Email: ${user.Email}<br>
+                    Role: ${user.role}
+                `;
+            }
+        });
+}
+
+function deleteUser(id) {
+    fetch(`${API}/remove_user/${id}/`, {
+        method: "DELETE",
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.msg || data.error);
+        renderUsers();
+    });
+}
+
+
+// NEW — Promote User
+function promoteUser(id) {
+    fetch(`${API}/promote_user/${id}/`, {
+        method: "POST",
+        credentials: "include"
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.msg || data.error);
+        renderUsers();
+    });
+}
+
+document.getElementById("user-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const fd = new FormData(this);
+
+    fetch(`${API}/add_user/`, {
+        method: "POST",
+        body: fd,
+        credentials: "include"
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.msg || data.error);
+        this.reset();
+        renderUsers();
+    });
+});
+
+
+// =========================================
+// INITIAL LOAD
+// =========================================
+renderMenu();
+renderUsers();
+
+</script>
+
+</body>
+</html>
