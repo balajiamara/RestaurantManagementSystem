@@ -25,11 +25,29 @@ from django.core.mail import send_mail, EmailMessage
 
 
 
+# @login_required
+# def get_dish(req):
+#     all_items = Menu.objects.all()
+#     return render(req, 'menu.html', {'menu': all_items})
+
 @login_required
 def get_dish(req):
+    # fetch items
     all_items = Menu.objects.all()
-    return render(req, 'menu.html', {'menu': all_items})
 
+    # read payload attached by your login_required decorator (if any)
+    payload = getattr(req, 'user_payload', None) or {}
+    role = payload.get('role', '')
+    userid = payload.get('userid', None)
+
+    # DEBUG: uncomment to print to console while testing
+    # print("get_dish payload:", payload)
+
+    return render(req, 'menu.html', {
+        'menu': all_items,
+        'role': role,
+        'logged_in_userid': userid,
+    })
 
 
 
