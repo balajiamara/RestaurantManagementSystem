@@ -155,9 +155,9 @@ CLOUDINARY_STORAGE = {
 
 
 EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_PORT= 587
+EMAIL_HOST=env('GMAIL_HOST')
+EMAIL_PORT= env('MAIL_PORT')
 EMAIL_USE_TLS= True
-EMAIL_HOST_USER= 'rambalajiamara@gmail.com'
-EMAIL_HOST_PASSWORD='cvma skjk pipg vnxa'
+EMAIL_HOST_USER= env('GMAIL')
+EMAIL_HOST_PASSWORD=env('APP_PASSWORD')
 DEFAULT_FROM_EMAIL=EMAIL_HOST_USER
