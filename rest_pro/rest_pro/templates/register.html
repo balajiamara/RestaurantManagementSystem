@@ -8,6 +8,7 @@
 <h1>Register User</h1>
 
 <form id="register-form">
+    {% csrf_token %}
     <input name="Userid" placeholder="User ID" required>
     <input name="Username" placeholder="Username" required>
     <input name="Email" placeholder="Email" required>

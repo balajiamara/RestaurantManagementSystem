@@ -43,6 +43,7 @@ document.getElementById("login-form").addEventListener("submit", function(e){
 <h1>Login</h1>
 
 <form id="login-form" action="/login_user/" method="POST">
+    {% csrf_token %}
     <input name="Userid" placeholder="User ID" required>
     <input name="Password" placeholder="Password" type="password" required>
     <button type="submit">Login</button>
@@ -50,7 +51,7 @@ document.getElementById("login-form").addEventListener("submit", function(e){
 
 <p>No account? <a href="/register/">Register Here</a></p>
 
-</script>
+<!-- </script> -->
 
 </body>
 </html>

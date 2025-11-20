@@ -40,7 +40,7 @@
           <button class="btn btn-primary" onclick="openAddModal()">Add Item</button>
         </div>
       {% endif %}
-      </div>
+    </div>
 
     <div id="grid" class="grid">
       {% for item in menu %}
@@ -114,7 +114,7 @@
 
         <div style="text-align:right">
           <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Dish</button>
+          <button id="addSubmitBtn" type="submit" class="btn btn-primary">Add Dish</button>
         </div>
       </form>
     </div>
@@ -167,7 +167,7 @@
 
         <div style="text-align:right;margin-top:8px;">
           <button type="button" class="btn" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button id="editSubmitBtn" type="submit" class="btn btn-primary">Save</button>
         </div>
       </form>
     </div>
@@ -188,26 +188,24 @@ function clearFieldErrors(prefix) {
     const el = document.getElementById(`${prefix}_${f}`);
     if (el) el.textContent = '';
   });
-  document.getElementById(prefix === 'err_add' ? 'addErrors' : 'editErrors').innerHTML = '';
+  const errContainer = document.getElementById(prefix === 'err_add' ? 'addErrors' : 'editErrors');
+  if (errContainer) errContainer.innerHTML = '';
 }
 
 function showFieldErrors(prefix, errors) {
-  // prefix = 'err_add' or 'err_edit'
   clearFieldErrors(prefix);
   if (!errors) return;
-  // errors like {"DishId":["This field is required."]}
   for (const [field, msgs] of Object.entries(errors)) {
     const id = `${prefix}_${field}`;
     const container = document.getElementById(id);
     if (container) {
-      container.textContent = msgs.join(' ');
+      container.textContent = (Array.isArray(msgs) ? msgs.join(' ') : String(msgs));
     } else {
-      // non-field errors: show in the error box area
       const box = document.createElement('div');
       box.className = 'error-box';
-      box.textContent = msgs.join(' ');
+      box.textContent = (Array.isArray(msgs) ? msgs.join(' ') : String(msgs));
       const parent = document.getElementById(prefix === 'err_add' ? 'addErrors' : 'editErrors');
-      parent.appendChild(box);
+      if (parent) parent.appendChild(box);
     }
   }
 }
@@ -216,15 +214,18 @@ function showFieldErrors(prefix, errors) {
 function openAddModal(){
   document.getElementById('addBackdrop').style.display = 'flex';
   clearFieldErrors('err_add');
-  document.getElementById('addForm').reset();
+  const form = document.getElementById('addForm');
+  if (form) form.reset();
 }
 function closeAddModal(){
-  document.getElementById('addBackdrop').style.display = 'none';
-  document.getElementById('addForm').reset();
+  const backdrop = document.getElementById('addBackdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  const form = document.getElementById('addForm');
+  if (form) form.reset();
   clearFieldErrors('err_add');
 }
 
-/* Edit modal functions */
+/* Edit modal open/close */
 function openEditModal(id){
   const card = document.querySelector(`.card[data-id="${id}"]`);
   if (!card) return alert('Card not found');
@@ -243,29 +244,25 @@ function openEditModal(id){
   clearFieldErrors('err_edit');
   document.getElementById('modalBackdrop').style.display = 'flex';
 }
-function closeAddModal(){
-  const backdrop = document.getElementById('addBackdrop');
+function closeModal(){
+  const backdrop = document.getElementById('modalBackdrop');
   if (backdrop) backdrop.style.display = 'none';
-  const form = document.getElementById('addForm');
+  const form = document.getElementById('editForm');
   if (form) form.reset();
-  clearFieldErrors('err_add');
+  clearFieldErrors('err_edit');
 }
-
 
 /* ADD Dish */
 async function addDish(){
   const form = document.getElementById('addForm');
   if (!form) return alert('Add form not found');
 
+  const submitBtn = document.getElementById('addSubmitBtn');
+  submitBtn.disabled = true;
+
   const fd = new FormData(form);
-
-  // ensure DishId being sent as number if desired
   const idVal = fd.get('DishId');
-  if (idVal && !Number.isNaN(Number(idVal))) {
-    fd.set('DishId', Number(idVal));
-  }
-
-  // remove Image key if no file selected
+  if (idVal && !Number.isNaN(Number(idVal))) fd.set('DishId', Number(idVal));
   const img = document.getElementById('addImage');
   if (img && img.files.length === 0) fd.delete('Image');
 
@@ -279,19 +276,11 @@ async function addDish(){
       headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
     });
 
-    // Try to parse JSON safely
     let data;
-    try {
-      data = await res.json();
-    } catch (parseErr) {
-      data = { non_field_errors: ['Invalid server response'] };
-    }
+    try { data = await res.json(); } catch { data = null; }
 
     if (res.ok) {
-      // close modal immediately and show a small visual feedback
       closeAddModal();
-
-      // optional small in-place success notification (temporary)
       const tmp = document.createElement('div');
       tmp.textContent = 'Dish added ✓';
       tmp.style.position = 'fixed';
@@ -302,25 +291,20 @@ async function addDish(){
       tmp.style.borderRadius = '6px';
       tmp.style.boxShadow = '0 2px 8px rgba(0,0,0,.1)';
       document.body.appendChild(tmp);
-
-      // reload after a short delay so user sees modal close + message
       setTimeout(()=> {
         document.body.removeChild(tmp);
         location.reload();
       }, 700);
-
     } else {
-      // show validation errors (field-specific or global)
-      showFieldErrors('err_add', data);
-      // keep modal open so admin can fix fields
+      showFieldErrors('err_add', data || {non_field_errors: [`Request failed: ${res.status}`]});
     }
   } catch (err) {
-    // network error or runtime error: show general error in addErrors
     showFieldErrors('err_add', {non_field_errors:['Network or server error']});
     console.error('addDish error:', err);
+  } finally {
+    submitBtn.disabled = false;
   }
 }
-
 
 /* DELETE Dish */
 async function deleteItem(id){
@@ -331,11 +315,12 @@ async function deleteItem(id){
       credentials: 'include',
       headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
     });
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch { data = null; }
     if (res.ok){
       location.reload();
     } else {
-      alert(data.error || JSON.stringify(data));
+      alert((data && (data.error || data.msg)) || `Delete failed: ${res.status}`);
     }
   } catch (err) {
     alert('Request failed');
@@ -343,9 +328,12 @@ async function deleteItem(id){
   }
 }
 
-/* UPDATE Dish */
+/* UPDATE Dish (PATCH + multipart/form-data) */
 async function updateDish(){
   const form = document.getElementById('editForm');
+  const submitBtn = document.getElementById('editSubmitBtn');
+  submitBtn.disabled = true;
+
   const id = document.getElementById('editDishId').value;
   const fd = new FormData(form);
   const fileInput = document.getElementById('editImage');
@@ -354,22 +342,28 @@ async function updateDish(){
   clearFieldErrors('err_edit');
 
   try {
+    // PATCH with FormData: browser will set Content-Type with boundary automatically
     const res = await fetch(`/modify_item/${id}/`, {
       method: 'PATCH',
       body: fd,
       credentials: 'include',
       headers: csrftoken ? { 'X-CSRFToken': csrftoken } : {}
     });
-    const data = await res.json();
+
+    let data;
+    try { data = await res.json(); } catch { data = null; }
+
     if (res.ok){
       closeModal();
       location.reload();
     } else {
-      showFieldErrors('err_edit', data);
+      showFieldErrors('err_edit', data || {non_field_errors: [`Request failed: ${res.status}`]});
     }
   } catch (err) {
     showFieldErrors('err_edit', {non_field_errors:['Network or server error']});
     console.error(err);
+  } finally {
+    submitBtn.disabled = false;
   }
 }
 </script>
