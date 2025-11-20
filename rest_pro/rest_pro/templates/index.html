@@ -40,7 +40,18 @@
 // =========================================
 // CONFIG
 // =========================================
-const API = "http://127.0.0.1:8000";
+
+/* Fast dynamic API: uses localhost for local dev, Render URL in production */
+const API = (function(){
+  const host = window.location.hostname;
+  const isLocal = host === "127.0.0.1" || host === "localhost";
+
+  if (isLocal) return "http://127.0.0.1:8000";
+  // production backend on Render (your provided URL)
+  return "https://restaurantmanagementsystem-sgt8.onrender.com";
+})();
+
+
 
 
 // =========================================
