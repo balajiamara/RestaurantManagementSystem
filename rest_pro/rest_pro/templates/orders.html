@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orders</title>
+</head>
+<body>
+
+<h1>Your Cart</h1>
+<div id="cart-list"></div>
+
+<h3 id="cart-total"></h3>
+
+<button onclick="placeOrder()">Place Order</button>
+<button onclick="window.location.href='/home/'">Back to Home</button>
+
+<script>
+
+// =========================================
+// CONFIG
+// =========================================
+
+/* Same dynamic API used in index.html */
+const API = (function(){
+  const host = window.location.hostname;
+  const isLocal = host === "127.0.0.1" || host === "localhost";
+
+  if (isLocal) return "http://127.0.0.1:8000";
+  return "https://restaurantmanagementsystem-sgt8.onrender.com";
+})();
+
+
+// =========================================
+// CHECK LOGIN
+// =========================================
+fetch(`${API}/whoami/`, { credentials: "include" })
+  .catch(() => window.location.href = "/login/");
+
+
+// =========================================
+// LOAD CART
+// =========================================
+function renderCart() {
+    fetch(`${API}/get_cart/`, { credentials:'include' })
+      .then(res => res.json())
+      .then(data => {
+          const div = document.getElementById("cart-list");
+          div.innerHTML = "";
+          let total = 0;
+
+          if (!data.cart_items || data.cart_items.length === 0){
+              div.innerHTML = "<p>Your cart is empty!</p>";
+              document.getElementById("cart-total").innerText = "";
+              return;
+          }
+
+          data.cart_items.forEach(item => {
+              total += parseInt(item.Price);
+              div.innerHTML += `
+                <strong>${item.DishName}</strong> — ₹${item.Price}<br>
+              `;
+          });
+
+          document.getElementById("cart-total").innerText = "Total Price: ₹" + total;
+      });
+}
+
+
+// =========================================
+// PLACE ORDER
+// =========================================
+function placeOrder(){
+    fetch(`${API}/place_order/`, {
+        method: "POST",
+        credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error){
+            alert(data.error);
+            return;
+        }
+        alert(
+            "Order Confirmed 🎉\n" +
+            "Order ID: " + data.order_id + "\n" +
+            "Total: ₹" + data.total_price + "\n" +
+            "Expected Delivery: " + data.expected_delivery
+        );
+        renderCart();
+    });
+}
+
+
+// Load cart on start
+renderCart();
+
+</script>
+
+</body>
+</html>

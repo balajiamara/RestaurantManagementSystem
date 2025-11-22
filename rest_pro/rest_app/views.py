@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from .serializers import MenuSerializer, UserSerializer, validate_img
 from django.core.files.uploadhandler import TemporaryFileUploadHandler
 from rest_framework import serializers
-from .models import Menu, Users
+from .models import Menu, Users, Orders
 from datetime import datetime, timedelta
 import cloudinary.uploader
 from .auth_check import admin_required, login_required
@@ -15,6 +15,7 @@ import bcrypt
 import jwt
 import time
 import traceback
+import uuid             #Orders
 from django.utils.html import escape
 from django.conf import settings
 SECRETKEY= settings.SECRET_KEY
@@ -470,6 +471,54 @@ def del_user(req, id):
     except Exception as e:
         return JsonResponse({'error': f'Unexpected error: {str(e)}'}, status=500)
 
+#Orders
+
+@login_required
+@csrf_exempt
+def add_to_cart(req, id):
+    cart = req.session.get("cart", [])
+    cart.append(id)
+    req.session["cart"] = cart
+    return JsonResponse({"msg": "Item added to cart"})
+
+
+@login_required
+def get_cart(req):
+    cart = req.session.get("cart", [])
+    dishes = Menu.objects.filter(DishId__in=cart)
+    data = list(dishes.values())
+    return JsonResponse({"cart_items": data})
+
+
+@login_required
+@csrf_exempt
+def place_order(req):
+    cart = req.session.get("cart", [])
+    if not cart:
+        return JsonResponse({"error": "Cart is empty"}, status=400)
+
+    dishes = Menu.objects.filter(DishId__in=cart)
+    total = sum(int(d.Price) for d in dishes)
+
+    order_id = "ORD" + uuid.uuid4().hex[:8]
+    delivery_time = datetime.now() + timedelta(minutes=30)
+
+    order = Orders.objects.create(
+        OrderId=order_id,
+        Userid=Users.objects.get(Userid=req.user_payload["userid"]),
+        Items=list(dishes.values()),
+        TotalPrice=total,
+        ExpectedDelivery=delivery_time
+    )
+
+    req.session["cart"] = []   # clear cart
+
+    return JsonResponse({
+        "msg": "Order Placed Successfully",
+        "order_id": order.OrderId,
+        "total_price": total,
+        "expected_delivery": delivery_time.strftime("%I:%M %p"),
+    })
 
 # FRONTEND CODES
 
@@ -540,6 +589,11 @@ def my_details_page(request):
         return HttpResponse("<h3>User not found</h3>")
 
     return render(request, "my_details.html", {"user": user})
+
+#for Orders
+def orders_page(req):
+    return render(req, "orders.html")
+
 
 # TO SEND EMAILS WITH ATTACHMENTS
 @csrf_exempt

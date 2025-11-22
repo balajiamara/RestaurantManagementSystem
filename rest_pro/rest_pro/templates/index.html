@@ -22,6 +22,11 @@
 
 <hr>
 
+<!-- NEW: Orders Navigation Button -->
+<button onclick="window.location.href='/orders.html'">Go to Orders</button>
+
+<hr>
+
 <h1>Users</h1>
 <div id="users-list"></div>
 <div id="user-detail"></div>
@@ -47,11 +52,8 @@ const API = (function(){
   const isLocal = host === "127.0.0.1" || host === "localhost";
 
   if (isLocal) return "http://127.0.0.1:8000";
-  // production backend on Render (your provided URL)
   return "https://restaurantmanagementsystem-sgt8.onrender.com";
 })();
-
-
 
 
 // =========================================
@@ -62,14 +64,12 @@ fetch(`${API}/whoami/`, { credentials: "include" })
     .then(res => res.json())
     .then(data => {
         if (data.role !== "admin") {
-            // Hide everything that has admin-only class
             document.querySelectorAll(".admin-only").forEach(el => {
                 el.style.display = "none";
             });
         }
     })
     .catch(() => {
-        // If token invalid → redirect to login
         window.location.href = "/login/";
     });
 
@@ -91,6 +91,9 @@ function renderMenu() {
                     <strong>${d.DishName}</strong> - ₹${d.Price}<br>
                     <button onclick="getDishDetail('${d.DishId}')">Details</button>
 
+                    <!-- NEW: Add to cart button for normal users -->
+                    <button onclick="addToCart('${d.DishId}')">Add to Cart</button>
+
                     <button class="admin-only" onclick="deleteDish('${d.DishId}')">
                         Delete
                     </button>
@@ -100,6 +103,7 @@ function renderMenu() {
             });
         });
 }
+
 
 function getDishDetail(id) {
     fetch(`${API}/show_item/`, { credentials: "include" })
@@ -149,6 +153,19 @@ document.getElementById("dish-form").addEventListener("submit", function(e) {
         renderMenu();
     });
 });
+
+
+// =========================================
+// NEW — ADD TO CART
+// =========================================
+function addToCart(id){
+    fetch(`${API}/add_to_cart/${id}/`, {
+        method:"POST",
+        credentials:"include"
+    })
+    .then(res => res.json())
+    .then(data => alert(data.msg));
+}
 
 
 // =========================================
@@ -212,7 +229,6 @@ function deleteUser(id) {
         renderUsers();
     });
 }
-
 
 // NEW — Promote User
 function promoteUser(id) {
