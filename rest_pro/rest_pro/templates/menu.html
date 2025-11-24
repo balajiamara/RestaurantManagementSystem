@@ -92,7 +92,68 @@
       <h3>Add New Dish</h3>
       <form id="addForm" onsubmit="event.preventDefault(); addDish();">
         <!-- full original add modal fields -->
-        (your same add modal content remains untouched)
+        <!-- (your same add modal content remains untouched) -->
+         <div class="form-row">
+          <div style="flex:1">
+            <label>Dish ID</label>
+            <input type="number" id="addDishId" name="DishId">
+            <div id="err_add_DishId" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Dish Name</label>
+            <input type="text" id="addDishName" name="DishName" placeholder="Enter dish name">
+            <div id="err_add_DishName" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Category</label>
+            <input type="text" id="addCategory" name="Category" placeholder="e.g. Starter, Main Course">
+            <div id="err_add_Category" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Ingredients</label>
+            <textarea id="addIngredients" name="Ingredients" rows="3" placeholder="Enter ingredients"></textarea>
+            <div id="err_add_Ingredients" class="field-error"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Price</label>
+            <input type="number" id="addPrice" name="Price" step="0.01" placeholder="Enter price">
+            <div id="err_add_Price" class="field-error"></div>
+          </div>
+        </div>
+
+        <!-- IMAGE UPLOAD + PREVIEW -->
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Upload Image</label>
+            <input type="file" id="addImage" name="Image" accept="image/*" onchange="previewAddImage(event)">
+            <div id="err_add_Image" class="field-error"></div>
+          
+            <!-- Modern preview box -->
+            <img id="addImagePreview"
+                 style="margin-top:12px; width:150px; height:150px; object-fit:cover; border-radius:8px; display:none; box-shadow:0 2px 8px rgba(0,0,0,.15);">
+          </div>
+        </div>
+
+        <!-- Server-side errors appear here -->
+        <div id="addErrors"></div>
+
+        <!-- Buttons -->
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+          <button type="button" class="btn btn-danger" onclick="closeAddModal()">Cancel</button>
+          <button id="addSubmitBtn" class="btn btn-primary" type="submit">Add Dish</button>
+        </div>
       </form>
     </div>
   </div>
@@ -103,7 +164,63 @@
       <h3>Edit Dish</h3>
       <form id="editForm" onsubmit="event.preventDefault(); updateDish();">
         <!-- full original edit modal fields -->
-        (your same edit modal content remains untouched)
+        <!-- (your same edit modal content remains untouched) -->
+         <div class="form-row">
+          <div style="flex:1">
+            <label>Dish ID</label>
+            <input type="number" id="editDishId" name="DishId" readonly>
+            <div id="err_edit_DishId" class="field-error"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Dish Name</label>
+            <input type="text" id="editDishName" name="DishName">
+            <div id="err_edit_DishName" class="field-error"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Category</label>
+            <input type="text" id="editCategory" name="Category">
+            <div id="err_edit_Category" class="field-error"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Ingredients</label>
+            <textarea id="editIngredients" name="Ingredients" rows="3"></textarea>
+            <div id="err_edit_Ingredients" class="field-error"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Price</label>
+            <input type="number" id="editPrice" name="Price" step="0.01">
+            <div id="err_edit_Price" class="field-error"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Image (optional)</label>
+            <input type="file" id="editImage" name="Image" accept="image/*">
+            <div id="err_edit_Image" class="field-error"></div>
+          </div>
+        </div>
+
+        <!-- Container for backend validation errors -->
+        <div id="editErrors"></div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px;">
+          <button type="button" class="btn btn-danger" onclick="closeModal()">Cancel</button>
+          <button id="editSubmitBtn" class="btn btn-primary" type="submit">Update Dish</button>
+        </div>
+
       </form>
     </div>
   </div>
@@ -243,6 +360,21 @@ async function addDish(){
     submitBtn.disabled = false;
   }
 }
+
+
+// PREVIEW OF IMAGE
+function previewAddImage(event) {
+  const file = event.target.files[0];
+  const preview = document.getElementById("addImagePreview");
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  } else {
+    preview.style.display = "none";
+  }
+}
+
+
 
 /* DELETE Dish */
 async function deleteItem(id){
